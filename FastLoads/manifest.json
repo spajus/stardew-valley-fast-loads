@@ -1,0 +1,10 @@
+{
+  "Name": "FastLoads",
+  "Author": "spajus",
+  "Version": "1.0.0",
+  "Description": "Fixes core performance issue that makes Stardew Valley slow to load with large expansions",
+  "UniqueID": "spajus.fastloads",
+  "EntryDll": "FastLoads.dll",
+  "MinimumApiVersion": "3.0.0",
+  "UpdateKeys": []
+}
