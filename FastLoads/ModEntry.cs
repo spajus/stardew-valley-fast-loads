@@ -26,13 +26,105 @@ namespace FastLoads {
             harmony.Patch(
                 original: AccessTools.Method(typeof(NPC),
                     "populateRoutesFromLocationToLocationList"),
-                postfix: new HarmonyMethod(typeof(StardewFastLoads),
+                prefix: new HarmonyMethod(typeof(StardewFastLoads),
                     nameof(StardewFastLoads.FastPopulateRoutes))
+                // postfix: new HarmonyMethod(typeof(StardewFastLoads),
+                //     nameof(StardewFastLoads.FastPopulateRoutes))
             );
         }
     }
 
     public static class StardewFastLoads {
+
+        public static void populateRoutesFromLocationToLocationList()
+		{
+            var routesField = GetPrivateField<NPC>("routesFromLocationToLocation");
+			var list = new List<List<string>>();
+			foreach (GameLocation i in Game1.locations)
+			{
+				if (!(i is Farm) && !i.name.Equals("Backwoods"))
+				{
+					List<string> route = new List<string>();
+					exploreWarpPoints(i, route);
+				}
+			}
+            routesField.SetValue(list, null);
+		}
+
+		// Token: 0x06001285 RID: 4741 RVA: 0x000F4098 File Offset: 0x000F2298
+		private static bool exploreWarpPoints(GameLocation l, List<string> route)
+		{
+            var routesField = GetPrivateField<NPC>("routesFromLocationToLocation");
+            var list = (List<List<string>>) routesField.GetValue(null);
+			bool added = false;
+			if (l != null && !route.Contains(l.name, StringComparer.Ordinal))
+			{
+				route.Add(l.name);
+				if (route.Count == 1 || !doesRoutesListContain(route))
+				{
+					if (route.Count > 1)
+					{
+						list.Add(route.ToList<string>());
+						added = true;
+					}
+					foreach (Warp warp in l.warps)
+					{
+						string name = warp.TargetName;
+						if (name == "BoatTunnel")
+						{
+							name = "IslandSouth";
+						}
+						if (!name.Equals("Farm", StringComparison.Ordinal) && !name.Equals("Woods", StringComparison.Ordinal) && !name.Equals("Backwoods", StringComparison.Ordinal) && !name.Equals("Tunnel", StringComparison.Ordinal) && !name.Contains("Volcano"))
+						{
+							exploreWarpPoints(Game1.getLocationFromName(name), route);
+						}
+					}
+					foreach (Point p in l.doors.Keys)
+					{
+						string name2 = l.doors[p];
+						if (name2 == "BoatTunnel")
+						{
+							name2 = "IslandSouth";
+						}
+						exploreWarpPoints(Game1.getLocationFromName(name2), route);
+					}
+				}
+				if (route.Count > 0)
+				{
+					route.RemoveAt(route.Count - 1);
+				}
+			}
+			return added;
+		}
+
+		// Token: 0x06001286 RID: 4742 RVA: 0x000F4240 File Offset: 0x000F2440
+		private static bool doesRoutesListContain(List<string> route)
+		{
+            var routesField = GetPrivateField<NPC>("routesFromLocationToLocation");
+            var list = (List<List<string>>) routesField.GetValue(null);
+			foreach (List<string> i in list)
+			{
+				if (i.Count == route.Count)
+				{
+					bool allSame = true;
+					for (int j = 0; j < route.Count; j++)
+					{
+						if (!i[j].Equals(route[j], StringComparison.Ordinal))
+						{
+							allSame = false;
+							break;
+						}
+					}
+					if (allSame)
+					{
+						return true;
+					}
+				}
+			}
+			return false;
+		}
+
+
         private static readonly HashSet<int> routesFromLocToLocHash = new();
 
         public static bool FastExploreWarpPoints(GameLocation l, List<string> route) {
